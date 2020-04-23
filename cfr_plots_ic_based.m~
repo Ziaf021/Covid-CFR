@@ -1,0 +1,18 @@
+function cfr_plots_ic_based(fileName)
+%R= load(fileName);
+%R=R.fmin;
+%clf()
+figure()
+%subplot(2,1,1)
+hold on
+plot (fileName.time,  cumsum(fileName.actual_cases), '*', 'Markersize', 2)
+yyaxis right
+plot (fileName.time,  cumsum(fileName.actual_death), 'o', 'Markersize', 2)
+plot (fileName.time,  cumsum(fileName.pred_death), '-', 'LineWidth', 2)
+plot (fileName.time, cumsum(fileName.sol_mat), '--', 'LineWidth', 2)
+title([fileName.p.country_name])
+xlabel('\bf Time');
+ylabel('\bf Pred.deaths & Actual.cases')
+hold off
+
+end
