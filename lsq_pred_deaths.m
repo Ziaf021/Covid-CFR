@@ -1,67 +1,75 @@
-function y = lsq_pred_deaths (prm, c_name)
-% data=load('Data_tillApr17.mat');
-% 
-% country_name='China';
-% 
-% p.obs_cases= data.cases_world{:, country_name};
-% 
-% p.obs_deaths=data.deaths_world{:, country_name};
-% 
-% p.sampling_time_len=15;
-% p.sampling_window= flip(0:1:p.sampling_time_len);
-% p.date_time = data.cases_world.date(end-p.sampling_window);
-% 
-p=cfr_prms(c_name);
-p.r =  prm(1);%
-p.s = prm(2);%
-p.mu_D = log(p.r / sqrt(1 + p.s^2/p.r^2));
-p.sigma_D = sqrt(log(1+p.s^2/p.r^2));
+function y = lsq_pred_deaths (prm1,prm2,prm3, c_name, no_of_days,output_id)
 
-%mu_D = log(prm_vec(1)/ sqrt(1 + prm_vec(2)^2/prm_vec(1)^2));
-%sigma_D = sqrt(log(1+prm_vec(2)^2/prm_vec(1)^2));
+p = cfr_prms(c_name, no_of_days);
+p.r =  prm1;%
+p.s = prm2;%
+mu_D = log(p.r / sqrt(1 + p.s^2/p.r^2));
+sigma_D = sqrt(log(1+p.s^2/p.r^2));
 
+p.mu_D = mu_D;
 
-%dths_vec=zeros(1,p.sampling_time_len+1);
+p.sigma_D = sigma_D;
 
-dths_vec=[];
-%conditional_prob_dead = @(t, x(1), x(2)) arrayfun(@(t)integral(@(s)lognpdf(s, x(1), x(2)), 0, t), t);
+obs_deaths = p.obs_deaths;
+
+obs_cases = p.obs_cases;
+
+dths_vec = zeros(p.sampling_time_len+1,1);%[];
 
 conditional_prob_dead = @(t, a, b) arrayfun(@(t)integral(@(s)lognpdf(s, a, b), 0, t), t);
 
-for my_window = p.sampling_window
+time_window = p.sampling_window ;
 
-    deaths = cumsum(p.obs_deaths(1:end-my_window));
 
-    country_allcases= p.obs_cases;
+ for ii =1:length(time_window)
+     
+     deaths = cumsum(obs_deaths(1:end-time_window(ii)));
     
-    cases_current_window =country_allcases(1:end-my_window);
+    cases= cumsum(obs_cases(1:end-time_window(ii)));
     
-   
+    cases_current_window = (cases(2:end)-cases(1:end-1));
     
-    % calculate the prob
-    prob_of_death= conditional_prob_dead([length(cases_current_window)-1:-1:0], p.mu_D,p.sigma_D);
+%    cum_cases = cumsum(cases_current_window);
     
-        
-   potential_dead = sum(prob_of_death.* cases_current_window');
-   
-   
-   if potential_dead == 0
-        cfr=0; 
-   
-    else
+    prob_of_death= conditional_prob_dead([length(cases_current_window)-1:-1:0], mu_D,sigma_D);
+
+   cfr = prm3;
+
+    prob_past = cfr*prob_of_death;
       
-    cfr = deaths(end) / potential_dead;
+   mean = sum(prob_past .* cases_current_window');
     
-    end
-   %size(cases_current_window(end))
-   dths_vec(end+1)=cfr*cases_current_window(end);
-   
+    dths_vec(ii) =  mean ;
+    
+   % direct_estimates(ii) = deaths(end)/cum_cases(end);
+ end
+ 
+ cum_cases = cumsum(obs_cases);
+ cum_deaths = cumsum (obs_deaths);
+ p.cfr_direct = cum_cases ./ cum_deaths;
+ 
+dths_vec (isnan(dths_vec)) = 0 ;
+
+prd_deaths = (round(dths_vec))' ;
+
+daily_deaths = [prd_deaths(1) prd_deaths(2:end)-prd_deaths(1:end-1)];
+
+%p.direct_estimates (isnan(p.direct_estimates)) = 0 ;
+
+p.predicted_deaths = daily_deaths ;
+
+p.rss = sum((p.predicted_deaths - (p.obs_deaths(end-p.sampling_window)')).^2);
+
+
+if output_id == 1
+    
+    y = p.rss; %sum((p.predictd_deaths - p.obs_deaths(end-p.sampling_window)).^2);
+    
+elseif output_id == 2
+
+    y = p.predicted_deaths'  ; %round(p.dths_vec);
+else
+    y = p;
 end
-   
-
-y= round(dths_vec)';
-
-%y =sum((prd_deaths - p.obs_deaths(end-p.sampling_window)).^2);
 
 
-end
