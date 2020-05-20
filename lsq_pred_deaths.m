@@ -21,7 +21,7 @@ conditional_prob_dead = @(t, a, b) arrayfun(@(t)integral(@(s)lognpdf(s, a, b), 0
 time_window = p.sampling_window ;
 
 
- for ii =1:length(time_window)
+ parfor ii =1:length(time_window)
      
      deaths = cumsum(obs_deaths(1:end-time_window(ii)));
     
@@ -58,8 +58,8 @@ daily_deaths = [prd_deaths(1) prd_deaths(2:end)-prd_deaths(1:end-1)];
 
 p.predicted_deaths = daily_deaths ;
 
-p.rss = sum((p.predicted_deaths - (p.obs_deaths(end-p.sampling_window)')).^2);
-
+%p.rss = sum((p.predicted_deaths - (p.obs_deaths(end-p.sampling_window)')).^2);
+p.rss = sum((prd_deaths - (cum_deaths(end-p.sampling_window)')).^2);
 
 if output_id == 1
     

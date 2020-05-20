@@ -56,9 +56,10 @@ pds_daily = [prd_deaths(1)  prd_deaths(2:end)-prd_deaths(1:end-1)] ;
 od=(obs_deaths(end-sampling_window)');
 
 
-y = sum((pds_daily-od).^2);
+%y = sum((pds_daily-od).^2);
 
-%y =sum((prd_deaths - cumsum(obs_deaths(end-sampling_window)')).^2);
+y =sum((prd_deaths - cumsum(obs_deaths(end-sampling_window)')).^2);
+%p.rss = sum((prd_deaths - (cum_deaths(end-p.sampling_window)')).^2)
 
 
 end
